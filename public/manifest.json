@@ -1,0 +1,16 @@
+{
+  "name": "AI Chatbot",
+  "short_name": "AI Chat",
+  "description": "Modern AI Chatbot powered by Spring AI and Gemini",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#08080d",
+  "theme_color": "#2beede",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

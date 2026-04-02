@@ -1,0 +1,43 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+### Dependencies ###
+node_modules
+
+### Build output ###
+dist
+dist-ssr
+
+### Environment & Secrets ###
+.env
+.env.local
+.env.*.local
+*.local
+!.env.example
+
+### Editor directories and files ###
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+### Agent / AI Tooling ###
+.agent/
+.gemini/
+
+### Temporary files ###
+tsc_errors.txt
+
+### OS ###
+.DS_Store
+Thumbs.db

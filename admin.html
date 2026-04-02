@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAG Admin Dashboard · Spring Boot Chatbot</title>
+  <meta name="description" content="Admin Dashboard quản lý hệ thống RAG Chatbot" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<div class="admin-wrapper">
+
+  <!-- ===== HEADER ===== -->
+  <header class="admin-header" id="admin-header">
+    <!-- Brand -->
+    <div class="header-brand">
+      <div class="brand-avatar">R</div>
+      <div class="brand-info">
+        <span class="brand-name">RAG Admin</span>
+        <span class="brand-sub">Spring Boot Chatbot</span>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="header-nav" role="navigation" aria-label="Điều hướng chính">
+      <button class="nav-tab active" data-tab="overview" id="nav-overview">
+        Tổng quan
+        <span class="nav-badge" id="badge-overview">5</span>
+      </button>
+      <button class="nav-tab" data-tab="knowledge" id="nav-knowledge">
+        Knowledge Base
+        <span class="nav-badge" id="badge-knowledge">4</span>
+      </button>
+      <button class="nav-tab" data-tab="jobs" id="nav-jobs">
+        Background Jobs
+        <span class="nav-badge" id="badge-jobs" style="background: var(--color-danger)">1</span>
+      </button>
+    </nav>
+
+    <!-- Meta: Time + Status -->
+    <div class="header-meta">
+      <div class="meta-time">
+        <span class="meta-clock" id="header-clock">--:--</span>
+        <span class="meta-date" id="header-date">--/--/----</span>
+      </div>
+      <div class="status-dot">Hệ thống bình thường</div>
+    </div>
+  </header>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="admin-main" role="main">
+
+    <!-- ================================================
+         TAB 1: TỔNG QUAN
+         ================================================ -->
+    <section class="tab-panel active" id="panel-overview" role="tabpanel" aria-labelledby="nav-overview">
+
+      <!-- Banner Alert -->
+      <div class="alert-banner warning" id="pending-banner">
+        <span class="alert-banner-text" id="pending-banner-text">
+          Có việc cần làm ngay &mdash; <strong id="pending-banner-count">...</strong> trang crawler chờ bạn duyệt
+        </span>
+        <button class="btn btn-primary btn-sm" id="btn-go-review">Duyệt ngay</button>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card primary">
+          <div class="stat-label">Tài liệu Active</div>
+          <div class="stat-value" id="stat-active-docs">—</div>
+          <div class="stat-sub"><span id="stat-vector-count">—</span> vectors trong Qdrant</div>
+        </div>
+        <div class="stat-card pending">
+          <div class="stat-label">Chờ Duyệt</div>
+          <div class="stat-value" id="stat-pending-pages">—</div>
+          <div class="stat-sub">từ crawler hôm nay</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-label">Crawl Gần Nhất</div>
+          <div class="stat-value" id="stat-last-crawl-pages">—</div>
+          <div class="stat-sub">trang &middot; <span id="stat-last-crawl-at">—</span></div>
+        </div>
+        <div class="stat-card info">
+          <div class="stat-label">Queries Hôm Nay</div>
+          <div class="stat-value" id="stat-queries-today">—</div>
+          <div class="stat-sub">low-relevance: <span class="warn" id="stat-low-relevance">—</span></div>
+        </div>
+      </div>
+
+      <!-- Content Grid: Topics + Chart -->
+      <div class="content-grid">
+
+        <!-- Topic Coverage -->
+        <div class="section-card">
+          <div class="section-header">
+            <div>
+              <div class="section-title">Phủ sóng tài liệu theo chủ đề</div>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="topic-list" id="topic-list">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Crawl History Chart -->
+        <div class="section-card">
+          <div class="section-header">
+            <div>
+              <div class="section-title">Lịch sử crawl</div>
+              <div class="section-subtitle">8 ngày gần nhất</div>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="chart-wrapper">
+              <div class="chart-bars" id="crawl-chart">
+                <!-- Rendered by JS -->
+              </div>
+              <div class="chart-legend">
+                <div class="legend-item">
+                  <div class="legend-dot" style="background: var(--color-success)"></div>
+                  Thành công
+                </div>
+                <div class="legend-item">
+                  <div class="legend-dot" style="background: var(--color-danger)"></div>
+                  Thất bại
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================================================
+         TAB 2: KNOWLEDGE BASE
+         ================================================ -->
+    <section class="tab-panel" id="panel-knowledge" role="tabpanel" aria-labelledby="nav-knowledge">
+
+      <!-- Sub-tab Navigation -->
+      <nav class="subtab-nav" role="navigation" aria-label="Knowledge Base sections">
+        <button class="subtab-btn active" data-subtab="upload" id="subtab-upload">
+          Upload tài liệu
+        </button>
+        <button class="subtab-btn" data-subtab="review" id="subtab-review">
+          Duyệt crawler
+          <span class="subtab-count">4</span>
+        </button>
+        <button class="subtab-btn" data-subtab="sources" id="subtab-sources">
+          Nguồn crawl
+        </button>
+      </nav>
+
+      <!-- Sub-tab: Upload -->
+      <div class="subtab-panel active" id="subpanel-upload">
+
+        <!-- Drop Zone -->
+        <div class="upload-zone" id="upload-zone" role="button" tabindex="0" aria-label="Khu vực upload tài liệu">
+          <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="12" y1="18" x2="12" y2="12"/>
+            <polyline points="9 15 12 12 15 15"/>
+          </svg>
+          <div class="upload-title">Kéo thả file vào đây hoặc click để chọn</div>
+          <div class="upload-sub">Hỗ trợ PDF, DOCX, TXT, MD, HTML &middot; Tối đa 50MB / file</div>
+          <button class="btn btn-primary" id="btn-choose-file">Chọn file</button>
+          <input type="file" id="file-input-admin" style="display:none" accept=".pdf,.docx,.txt,.md,.html" multiple />
+        </div>
+
+        <!-- Documents List -->
+        <div class="table-toolbar">
+          <span class="table-title">Tài liệu đã upload (<span id="doc-count">...</span>)</span>
+          <div class="filter-tabs" id="doc-filter">
+            <button class="filter-tab active" data-filter="all">Tất cả</button>
+            <button class="filter-tab" data-filter="active">Active</button>
+            <button class="filter-tab" data-filter="processing">Đang xử lý</button>
+            <button class="filter-tab" data-filter="error">Lỗi</button>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table" aria-label="Danh sách tài liệu">
+            <thead>
+              <tr>
+                <th>TÊN FILE</th>
+                <th>KÍCH THƯỚC</th>
+                <th>CHUNKS</th>
+                <th>CHỦ ĐỀ</th>
+                <th>UPLOAD LÚC</th>
+                <th>TRẠNG THÁI</th>
+              </tr>
+            </thead>
+            <tbody id="docs-table-body">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- Sub-tab: Review -->
+      <div class="subtab-panel" id="subpanel-review">
+
+        <!-- Review Banner -->
+        <div class="alert-banner warning" style="margin-bottom: var(--space-5)">
+          <span class="alert-banner-text">4 trang đang chờ bạn duyệt từ lần crawl gần nhất.</span>
+          <button class="btn btn-success btn-sm" id="btn-approve-all">Duyệt tất cả</button>
+        </div>
+
+        <div class="table-toolbar">
+          <span class="table-title">Trang đã crawl</span>
+          <div class="filter-tabs" id="review-filter">
+            <button class="filter-tab" data-filter="all">Tất cả</button>
+            <button class="filter-tab active" data-filter="pending">Chờ duyệt (4)</button>
+            <button class="filter-tab" data-filter="approved">Đã duyệt</button>
+            <button class="filter-tab" data-filter="rejected">Đã từ chối</button>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table" aria-label="Danh sách trang crawl">
+            <thead>
+              <tr>
+                <th>TRANG</th>
+                <th>NGUỒN</th>
+                <th>TỪ</th>
+                <th>CHUNKS</th>
+                <th>CRAWLED LÚC</th>
+                <th>HÀNH ĐỘNG</th>
+              </tr>
+            </thead>
+            <tbody id="review-table-body">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- Sub-tab: Sources -->
+      <div class="subtab-panel" id="subpanel-sources">
+
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: var(--space-5)">
+          <span class="table-title">Nguồn crawl đang theo dõi</span>
+          <button class="btn btn-primary btn-sm" id="btn-add-source">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Thêm nguồn
+          </button>
+        </div>
+
+        <div id="sources-list">
+          <!-- Rendered by JS -->
+        </div>
+
+        <!-- Add Source Form -->
+        <div class="add-source-section" id="add-source-form" style="display:none">
+          <div class="section-title add-source-title">Thêm nguồn mới</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="input-source-name">Tên nguồn</label>
+              <input type="text" id="input-source-name" class="form-input" placeholder="VD: Baeldung Spring" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-source-url">URL gốc</label>
+              <input type="url" id="input-source-url" class="form-input" placeholder="https://www.baeldung.com/spring-boot" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-source-cron">Lịch chạy (Cron)</label>
+              <input type="text" id="input-source-cron" class="form-input" placeholder="0 6 * * *  (hàng ngày 06:00)" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-source-depth">Độ sâu crawl</label>
+              <input type="number" id="input-source-depth" class="form-input" placeholder="3" min="1" max="10" />
+            </div>
+          </div>
+          <div style="display:flex; gap: var(--space-3)">
+            <button class="btn btn-primary" id="btn-save-source">Lưu nguồn</button>
+            <button class="btn btn-outline" id="btn-cancel-source">Huỷ</button>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ================================================
+         TAB 3: BACKGROUND JOBS
+         ================================================ -->
+    <section class="tab-panel" id="panel-jobs" role="tabpanel" aria-labelledby="nav-jobs">
+
+      <!-- Jobs Stats -->
+      <div class="jobs-stats-grid">
+        <div class="stat-card primary">
+          <div class="stat-label">Tổng Jobs</div>
+          <div class="stat-value" id="job-stat-total">—</div>
+          <div class="stat-sub">đã đăng ký</div>
+        </div>
+        <div class="stat-card info">
+          <div class="stat-label">Đang Chạy</div>
+          <div class="stat-value" id="job-stat-running">—</div>
+          <div class="stat-sub">lúc này</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-label">Thành Công Hôm Nay</div>
+          <div class="stat-value" id="job-stat-success">—</div>
+          <div class="stat-sub">lần chạy</div>
+        </div>
+        <div class="stat-card danger">
+          <div class="stat-label">Thất Bại</div>
+          <div class="stat-value" id="job-stat-failed">—</div>
+          <div class="stat-sub">cần kiểm tra</div>
+        </div>
+      </div>
+
+      <!-- Jobs Table -->
+      <div class="table-toolbar">
+        <span class="table-title">Danh sách Jobs</span>
+      </div>
+
+      <div class="table-container">
+        <table class="data-table" aria-label="Danh sách background jobs">
+          <thead>
+            <tr>
+              <th>TÊN JOB</th>
+              <th>LOẠI</th>
+              <th>CRON / LỊCH</th>
+              <th>LẦN CUỐI CHẠY</th>
+              <th>THỜI GIAN</th>
+              <th>TRẠNG THÁI</th>
+              <th>HÀNH ĐỘNG</th>
+            </tr>
+          </thead>
+          <tbody id="jobs-table-body">
+            <!-- Rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<!-- Nút quay lại Chatbot nổi ở góc dưới trái -->
+<a href="/" class="btn-return-chat" title="Quay lại Chatbot chính">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 18l-6-6 6-6"/>
+  </svg>
+  <span>Chatbot</span>
+</a>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+<script type="module" src="/src/admin/main.ts"></script>
+</body>
+</html>

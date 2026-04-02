@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Chatbot - Powered by Spring AI</title>
+  <meta name="description" content="Modern AI Chatbot Interface powered by Spring AI and Gemini" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#2beede" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <!-- ===== Login Modal (small popup, not full-screen) ===== -->
+  <div id="login-modal" class="login-modal hidden" role="dialog" aria-modal="true" aria-labelledby="login-modal-title">
+    <div class="login-modal-backdrop" id="login-modal-backdrop"></div>
+    <div class="login-modal-card">
+      <button class="login-modal-close" id="login-modal-close" aria-label="Đóng modal đăng nhập">&times;</button>
+      <div class="login-modal-logo" aria-hidden="true">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="url(#lgrad)" opacity="0.9"/>
+          <path d="M2 17L12 22L22 17" stroke="url(#lgrad)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
+          <path d="M2 12L12 17L22 12" stroke="url(#lgrad)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="lgrad" x1="2" y1="2" x2="22" y2="22">
+              <stop offset="0%" stop-color="#2beede"/>
+              <stop offset="100%" stop-color="#1a8aff"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <h2 id="login-modal-title" class="login-modal-title">Chào mừng trở lại!</h2>
+      <p class="login-modal-subtitle">Đăng nhập để lưu lịch sử chat và trải nghiệm đầy đủ</p>
+      <div id="google-btn-container" class="google-btn-container"></div>
+      <p id="login-error" class="login-error" style="display:none" role="alert"></p>
+      <p class="login-modal-footer">Bảo mật bởi Google OAuth 2.0</p>
+    </div>
+  </div>
+
+  <!-- ===== Main App ===== -->
+  <div id="app">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar" aria-label="Lịch sử cuộc trò chuyện">
+      <div class="sidebar-header">
+        <div class="logo" aria-hidden="true">
+          <div class="logo-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="url(#grad1)" />
+              <path d="M2 17L12 22L22 17" stroke="url(#grad1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M2 12L12 17L22 12" stroke="url(#grad1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              <defs>
+                <linearGradient id="grad1" x1="2" y1="2" x2="22" y2="22">
+                  <stop offset="0%" stop-color="#2beede" />
+                  <stop offset="100%" stop-color="#1a8aff" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <span class="logo-text">AI Chatbot</span>
+        </div>
+        <button id="new-chat-btn" class="btn-new-chat" title="Cuộc trò chuyện mới" aria-label="Bắt đầu cuộc trò chuyện mới">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="sidebar-search">
+        <div class="search-input-wrapper">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="search-input" class="search-input" placeholder="Tìm kiếm cuộc trò chuyện..." aria-label="Tìm kiếm cuộc trò chuyện" />
+        </div>
+      </div>
+
+      <div id="sessions-list" class="sessions-list" role="list" aria-label="Danh sách cuộc trò chuyện">
+        <!-- Sessions will be rendered here -->
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </div>
+          <div class="user-details">
+            <span class="user-name">Guest</span>
+            <span class="user-plan">Spring AI</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Chat Area -->
+    <main id="main-content" class="main-content">
+      <!-- Top Bar -->
+      <header class="chat-header">
+        <button id="sidebar-toggle" class="btn-sidebar-toggle" title="Ẩn/hiện sidebar" aria-label="Ẩn/hiện sidebar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <div class="chat-title-wrapper">
+          <h1 id="chat-title" class="chat-title">New Conversation</h1>
+          <!-- Model Selector (Phase 2.3) -->
+          <div class="model-selector" id="model-selector">
+            <button class="model-selector-btn" id="model-selector-btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Chọn model AI">
+              <span class="model-name" id="model-name-display">Gemini 2.0 Flash</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="model-chevron" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+            <div class="model-dropdown hidden" id="model-dropdown" role="listbox" aria-label="Danh sách model AI">
+              <button class="model-option active" data-model="gemini-2.0-flash" role="option" aria-selected="true">
+                <div class="model-option-info">
+                  <span class="model-option-name">Gemini 2.0 Flash</span>
+                  <span class="model-option-desc">Nhanh, hiệu quả</span>
+                </div>
+                <svg class="model-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+              <button class="model-option" data-model="gemini-2.5-flash" role="option" aria-selected="false">
+                <div class="model-option-info">
+                  <span class="model-option-name">Gemini 2.5 Flash</span>
+                  <span class="model-option-desc">Cân bằng tốc độ & chất lượng</span>
+                </div>
+                <svg class="model-check hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+              <button class="model-option" data-model="gemini-2.5-pro" role="option" aria-selected="false">
+                <div class="model-option-info">
+                  <span class="model-option-name">Gemini 2.5 Pro</span>
+                  <span class="model-option-desc">Mạnh nhất, chậm hơn</span>
+                </div>
+                <svg class="model-check hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <!-- Dark/Light Mode Toggle (Phase 2.4) -->
+          <button id="theme-toggle" class="btn-icon btn-theme-toggle" title="Đổi giao diện sáng/tối" aria-label="Đổi giao diện sáng/tối">
+            <svg class="icon-dark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+              <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+            <svg class="icon-light" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </button>
+
+
+          <!-- Auth Button Area (shown when not logged in) -->
+          <div id="header-auth-buttons" class="header-auth-buttons">
+            <button id="header-login-btn" class="btn-header-login">Đăng nhập</button>
+          </div>
+
+          <!-- User Avatar (shown when logged in) -->
+          <div id="header-user-menu" class="header-user-menu hidden">
+            <button id="header-user-btn" class="header-user-btn" title="Menu người dùng" aria-label="Menu người dùng" aria-haspopup="true" aria-expanded="false">
+              <div id="header-avatar" class="header-avatar-placeholder">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </div>
+            </button>
+            <!-- Dropdown menu -->
+            <div id="user-dropdown" class="user-dropdown hidden" role="menu">
+              <div class="user-dropdown-header">
+                <span id="dropdown-user-name" class="dropdown-user-name"></span>
+                <span id="dropdown-user-email" class="dropdown-user-email"></span>
+              </div>
+              <div class="user-dropdown-divider"></div>
+              <a href="/admin.html" id="admin-dashboard-btn" class="user-dropdown-item hidden" role="menuitem" style="text-decoration:none">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                Admin Dashboard
+              </a>
+              <button id="logout-btn" class="user-dropdown-item user-dropdown-logout" role="menuitem">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                Đăng xuất
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Chat Messages -->
+      <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-label="Tin nhắn cuộc trò chuyện">
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="welcome-screen">
+          <div class="welcome-icon" aria-hidden="true">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="url(#wgrad)" opacity="0.8"/>
+              <path d="M2 17L12 22L22 17" stroke="url(#wgrad)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
+              <path d="M2 12L12 17L22 12" stroke="url(#wgrad)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <defs>
+                <linearGradient id="wgrad" x1="2" y1="2" x2="22" y2="22">
+                  <stop offset="0%" stop-color="#2beede"/>
+                  <stop offset="100%" stop-color="#1a8aff"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <h2 class="welcome-title">Bạn đang nghĩ gì vậy?</h2>
+          <p class="welcome-subtitle">Hỏi tôi bất cứ điều gì — tôi được cung cấp bởi Gemini via Spring AI</p>
+          <div class="welcome-suggestions" role="list" aria-label="Gợi ý câu hỏi">
+            <button class="suggestion-chip" data-prompt="Explain how Spring AI works with Gemini" role="listitem">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Spring AI basics
+            </button>
+            <button class="suggestion-chip" data-prompt="Write a REST API controller in Spring Boot with best practices" role="listitem">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              REST API example
+            </button>
+            <button class="suggestion-chip" data-prompt="How to implement RAG (Retrieval Augmented Generation) pattern?" role="listitem">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              RAG pattern
+            </button>
+            <button class="suggestion-chip" data-prompt="Compare React vs Vue vs Angular for a new project in 2026" role="listitem">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+              Framework comparison
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Area -->
+      <div class="chat-input-area">
+        <div class="input-container">
+          <div class="input-wrapper">
+            <textarea id="message-input" class="message-input" placeholder="Nhắn tin với AI Chatbot..." rows="1" aria-label="Nhập tin nhắn"></textarea>
+            <button id="send-btn" class="btn-send" title="Gửi tin nhắn" aria-label="Gửi tin nhắn" disabled>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+          <p class="input-hint">Nhấn <kbd>Enter</kbd> để gửi · <kbd>Shift+Enter</kbd> xuống dòng</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Loading overlay for file upload -->
+  <div id="upload-overlay" class="upload-overlay hidden" role="status" aria-live="polite">
+    <div class="upload-modal">
+      <div class="upload-spinner" aria-hidden="true"></div>
+      <p>Đang tải file lên...</p>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Dialog -->
+  <div id="confirm-dialog" class="confirm-dialog hidden" role="alertdialog" aria-modal="true" aria-labelledby="confirm-dialog-title">
+    <div class="confirm-dialog-backdrop" id="confirm-dialog-backdrop"></div>
+    <div class="confirm-dialog-card">
+      <div class="confirm-dialog-icon" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+      </div>
+      <h3 id="confirm-dialog-title" class="confirm-dialog-title">Xoá cuộc trò chuyện?</h3>
+      <p class="confirm-dialog-message">Tất cả tin nhắn trong cuộc trò chuyện này sẽ bị xóa vĩnh viễn và không thể khôi phục.</p>
+      <div class="confirm-dialog-actions">
+        <button id="confirm-cancel" class="btn-confirm-cancel">Huỷ</button>
+        <button id="confirm-delete" class="btn-confirm-delete">Xoá</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
