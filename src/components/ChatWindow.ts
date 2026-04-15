@@ -51,7 +51,7 @@ export function showTypingIndicator(): HTMLElement {
   el.id = 'typing-message';
   el.setAttribute('aria-label', 'AI đang trả lời...');
   el.innerHTML = `
-    <div class="message-avatar" aria-hidden="true">
+    <div class="message-avatar thinking-pulse" aria-hidden="true">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
       </svg>
@@ -59,7 +59,16 @@ export function showTypingIndicator(): HTMLElement {
     <div class="message-body">
       <div class="message-role">AI Assistant</div>
       <div class="message-content">
-        <div class="typing-indicator" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="thinking-container">
+          <div class="thinking-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="thinking-text">
+            <span class="thinking-label">Đang suy nghĩ</span>
+            <span class="thinking-ellipsis">
+              <span class="dot dot-1">.</span><span class="dot dot-2">.</span><span class="dot dot-3">.</span>
+            </span>
+          </div>
+          <div class="thinking-subtext">AI đang phân tích và chuẩn bị câu trả lời cho bạn</div>
+        </div>
       </div>
     </div>
   `;
