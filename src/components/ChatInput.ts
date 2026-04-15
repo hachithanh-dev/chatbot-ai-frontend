@@ -4,8 +4,8 @@ import { showLoginScreen } from '../auth/authUI';
 import { state } from '../store/state';
 import { dom } from '../utils/dom';
 import { escapeHtml } from '../utils/formatter';
-import { renderMarkdown } from './MarkdownRenderer';
 import { addMessageToUI, showTypingIndicator, scrollToBottom } from './ChatWindow';
+import { StreamRenderer } from './StreamRenderer';
 import type { StreamEvent } from '../types';
 import { renderSessions, loadSessions } from './Sidebar';
 
@@ -120,8 +120,11 @@ export async function sendMessage(text: string) {
 
     typingEl.remove();
     const aiMessage = addMessageToUI('assistant', '');
-    const contentEl = aiMessage.querySelector('.message-content')!;
+    const contentEl = aiMessage.querySelector('.message-content')! as HTMLElement;
+    aiMessage.classList.add('streaming');
 
+    // Use StreamRenderer for smooth typewriter effect
+    const streamRenderer = new StreamRenderer(contentEl);
     let buffer = '';
 
     while (true) {
@@ -142,8 +145,7 @@ export async function sendMessage(text: string) {
 
           if (event.type === 'CONTENT') {
             accumulatedContent += event.content;
-            contentEl.innerHTML = renderMarkdown(accumulatedContent);
-            scrollToBottom();
+            streamRenderer.pushToken(event.content);
           } else if (event.type === 'TITLE') {
             dom.chatTitle.textContent = event.title || event.content || 'Chat';
             if (event.sessionId) {
@@ -170,7 +172,7 @@ export async function sendMessage(text: string) {
             state.currentSessionId = event.sessionId;
             currentSessionId = event.sessionId;
             
-            // Thêm session vào danh sách ngay lập tức để có phản hồi UI tốt nhất
+            // Add session to list immediately for best UI feedback
             if (!state.sessions.some(s => s.id === event.sessionId)) {
               state.sessions.unshift({
                 id: event.sessionId,
@@ -186,6 +188,12 @@ export async function sendMessage(text: string) {
         }
       }
     }
+
+    // Signal stream complete — renderer drains remaining queue then finalizes
+    streamRenderer.finish(() => {
+      aiMessage.classList.remove('streaming');
+      scrollToBottom();
+    });
 
     if (currentSessionId && !state.sessions.find(s => s.id === currentSessionId)) {
       loadSessions();

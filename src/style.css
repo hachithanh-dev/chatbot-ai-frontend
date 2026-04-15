@@ -1023,15 +1023,66 @@ body {
 [data-theme="light"] .code-block .comment { color: #64748b; }
 [data-theme="light"] .code-block .function { color: #2563eb; }
 
-/* Typing Indicator */
-.typing-indicator {
+/* Typing / Thinking Indicator */
+.thinking-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, var(--accent-dim), rgba(26, 138, 255, 0.06));
+  border: 1px solid rgba(43, 238, 222, 0.12);
+  border-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
+  animation: thinkingFadeIn 0.4s ease-out;
+}
+
+/* Shimmer overlay */
+.thinking-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(43, 238, 222, 0.06) 40%,
+    rgba(43, 238, 222, 0.12) 50%,
+    rgba(43, 238, 222, 0.06) 60%,
+    transparent 100%
+  );
+  animation: shimmer 2s infinite ease-in-out;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes thinkingFadeIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Pulsing avatar during thinking */
+.thinking-pulse {
+  animation: avatarPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes avatarPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(43, 238, 222, 0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(43, 238, 222, 0); }
+}
+
+.thinking-dots {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 0;
 }
 
-.typing-indicator span {
+.thinking-dots span {
   width: 6px;
   height: 6px;
   background: var(--accent);
@@ -1039,14 +1090,85 @@ body {
   animation: bounce 1.4s infinite ease-in-out both;
 }
 
-.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
-.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
-.typing-indicator span:nth-child(3) { animation-delay: 0s; }
+.thinking-dots span:nth-child(1) { animation-delay: -0.32s; }
+.thinking-dots span:nth-child(2) { animation-delay: -0.16s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0s; }
 
 @keyframes bounce {
   0%, 80%, 100% { transform: scale(0); opacity: 0.4; }
   40% { transform: scale(1); opacity: 1; }
 }
+
+.thinking-text {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.thinking-label {
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.thinking-ellipsis .dot {
+  display: inline-block;
+  animation: ellipsisFade 1.4s infinite;
+  opacity: 0;
+  color: var(--accent);
+  -webkit-text-fill-color: var(--accent);
+  font-weight: 700;
+}
+
+.thinking-ellipsis .dot-1 { animation-delay: 0s; }
+.thinking-ellipsis .dot-2 { animation-delay: 0.2s; }
+.thinking-ellipsis .dot-3 { animation-delay: 0.4s; }
+
+@keyframes ellipsisFade {
+  0%, 20% { opacity: 0; }
+  40% { opacity: 1; }
+  60%, 100% { opacity: 0; }
+}
+
+.thinking-subtext {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ============================================
+   STREAMING CURSOR (blinking caret)
+   ============================================ */
+
+/* Smooth cursor with gentle pulse instead of hard blink */
+.message.streaming .message-content > *:last-child::after {
+  content: '▍';
+  display: inline;
+  color: var(--accent);
+  animation: cursorPulse 1s ease-in-out infinite;
+  font-weight: 400;
+  margin-left: 1px;
+  vertical-align: baseline;
+}
+
+@keyframes cursorPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Smooth content appearance during streaming — subtle opacity transition  */
+.message.streaming .message-content {
+  /* Prevent layout shift from markdown re-renders */
+  will-change: contents;
+}
+
+
+
+
 
 /* ============================================
    CHAT INPUT AREA
