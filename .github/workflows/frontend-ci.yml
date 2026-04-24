@@ -1,0 +1,168 @@
+# =============================================================================
+# CI/CD Pipeline — AI Chatbot Frontend
+# =============================================================================
+#
+# Pipeline flow:
+#
+#   PR → main:
+#     Secret Scan → Build & Check → Docker Build + Trivy Scan (no push)
+#
+#   Push to main (after merge):
+#     Secret Scan → Docker Build + Trivy Scan + Push to Docker Hub
+#
+# =============================================================================
+
+name: Frontend CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '20'
+  IMAGE_NAME: chatbot-frontend
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════
+  # Stage 0: Secret Scanning — block pipeline if credentials leaked
+  # ═══════════════════════════════════════════════════════════════
+  secret-scan:
+    name: 🔒 Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog OSS (PR)
+        if: github.event_name == 'pull_request'
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.pull_request.base.sha }}
+          head: ${{ github.event.pull_request.head.sha }}
+          extra_args: --only-verified
+
+      - name: TruffleHog OSS (Push)
+        if: github.event_name == 'push'
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.before }}
+          head: ${{ github.event.after }}
+          extra_args: --only-verified
+
+  # ═══════════════════════════════════════════════════════════════
+  # Stage 1: TypeScript Check + Vite Build (PR only — fast feedback)
+  # ═══════════════════════════════════════════════════════════════
+  build-check:
+    name: 🧪 TypeScript Check & Build
+    runs-on: ubuntu-latest
+    needs: [secret-scan]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: Production build
+        run: npm run build
+
+      - name: Verify build output
+        run: |
+          echo "=== Build Output ==="
+          ls -la dist/
+          echo ""
+          echo "=== Asset Sizes ==="
+          du -sh dist/assets/*
+
+  # ═══════════════════════════════════════════════════════════════
+  # Stage 2: Docker Build + Trivy Scan (PR only — gate before merge)
+  # Build image locally (NO push), scan for OS vulnerabilities.
+  # ═══════════════════════════════════════════════════════════════
+  docker-build-scan:
+    name: 🐳 Docker Build + Trivy Scan
+    runs-on: ubuntu-latest
+    needs: [build-check]
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image (local only — no push)
+        run: |
+          docker build \
+            -t ${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.head.sha }} \
+            .
+
+      - name: Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.head.sha }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+          vuln-type: 'os'
+
+  # ═══════════════════════════════════════════════════════════════
+  # Stage 3: Docker Build, Scan & Push (push to main — after merge)
+  # Defense-in-depth: rebuild clean from main, scan again, then push.
+  # ═══════════════════════════════════════════════════════════════
+  docker-push:
+    name: 🚀 Docker Build, Scan & Push
+    runs-on: ubuntu-latest
+    needs: [secret-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Docker Image
+        run: |
+          docker build \
+            -t ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            -t ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest \
+            .
+
+      - name: Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+          vuln-type: 'os'
+
+      - name: Push Docker Image
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
