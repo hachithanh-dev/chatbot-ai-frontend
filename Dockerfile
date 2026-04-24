@@ -19,6 +19,11 @@ RUN npm run build
 # =============================================================================
 FROM nginx:1.27-alpine
 
+# Patch all OS-level vulnerabilities (OpenSSL, libxml2, libpng, musl, zlib)
+# nginx:1.27-alpine ships with outdated system packages that have known CVEs.
+# This ensures Trivy scan passes in CI pipeline.
+RUN apk update && apk upgrade --no-cache && rm -rf /var/cache/apk/*
+
 # Run as non-root user — defense in depth
 # If attacker exploits Nginx, they get "nginx" user (limited) instead of "root"
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
