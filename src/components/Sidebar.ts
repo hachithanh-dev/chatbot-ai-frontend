@@ -2,6 +2,7 @@ import { api } from '../api';
 import { state } from '../store/state';
 import { dom } from '../utils/dom';
 import { formatDate, escapeHtml } from '../utils/formatter';
+import { activateFocusTrap } from '../utils/focusTrap';
 import { selectSession, clearChat } from './ChatWindow';
 import { showToast } from './Toast';
 
@@ -59,16 +60,29 @@ function closeContextMenu() {
   }
 }
 
+// Focus trap cleanup for confirm dialog
+let _confirmFocusTrapCleanup: (() => void) | null = null;
+
 /** Show confirm dialog for session deletion */
 function showDeleteConfirm(sessionId: string) {
   pendingDeleteSessionId = sessionId;
   dom.confirmDialog.classList.remove('hidden');
+  // Activate focus trap inside dialog
+  setTimeout(() => {
+    _confirmFocusTrapCleanup?.();
+    _confirmFocusTrapCleanup = activateFocusTrap(
+      dom.confirmDialog,
+      hideDeleteConfirm
+    );
+  }, 50);
 }
 
 /** Hide confirm dialog */
 function hideDeleteConfirm() {
   pendingDeleteSessionId = null;
   dom.confirmDialog.classList.add('hidden');
+  _confirmFocusTrapCleanup?.();
+  _confirmFocusTrapCleanup = null;
 }
 
 /** Delete a session */

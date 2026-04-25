@@ -23,8 +23,8 @@ export interface ChatMessage {
 export interface StreamEvent {
   sessionId: string;
   title?: string;
-  timestamp: string;
+  timestamp?: string;
   type: 'CONTENT' | 'TITLE' | 'ERROR';
-  content: string;
-  role: string;
+  content?: string;
+  role?: string;
 }
