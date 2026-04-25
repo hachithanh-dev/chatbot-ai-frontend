@@ -1,0 +1,36 @@
+# Dependencies — rebuilt inside container via npm ci
+node_modules
+
+# Build output — rebuilt inside container via npm run build
+dist
+dist-ssr
+
+# Git history — not needed for Docker build
+.git
+.gitignore
+
+# Environment files — secrets must be injected at runtime, not baked into image
+.env
+.env.local
+.env.*.local
+
+# Editor / IDE
+.vscode
+.idea
+*.sw?
+
+# Agent / AI tooling
+.agent
+.gemini
+
+# Logs / temporary
+*.log
+tsc_errors.txt
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation — not needed in production image
+README.md
+LICENSE

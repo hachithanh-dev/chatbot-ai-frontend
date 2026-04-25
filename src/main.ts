@@ -2,12 +2,13 @@ import './style.css';
 import { dom } from './utils/dom';
 import { state } from './store/state';
 import { renderSessions, loadSessions, toggleSidebar, initConfirmDialog } from './components/Sidebar';
-import { startNewChat, selectSession } from './components/ChatWindow';
-import { autoResizeTextarea, updateSendButton, sendMessage, consumePendingMessage } from './components/ChatInput';
+import { startNewChat, selectSession, initScrollObserver, updateWelcomeGreeting } from './components/ChatWindow';
+import { autoResizeTextarea, updateSendButton, sendMessage, consumePendingMessage, abortStream } from './components/ChatInput';
 import { tryRestoreSession } from './auth/authState';
 import { initGoogleAuth } from './auth/googleAuth';
 import { hideLoginScreen, updateHeaderAuth, initHeaderAuthListeners } from './auth/authUI';
 import { initThemeToggle, initModelSelector, initSwipeGesture } from './components/UIExtensions';
+import { API_BASE } from './config';
 
 const STORAGE_KEY_SESSION = 'chatbot_last_session_id';
 
@@ -63,15 +64,20 @@ function initApp() {
   dom.messageInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (dom.messageInput.value.trim() && !state.isStreaming) {
+      if (state.isStreaming) {
+        // Enter during streaming = stop
+        abortStream();
+      } else if (dom.messageInput.value.trim()) {
         sendMessage(dom.messageInput.value);
       }
     }
   });
 
-  // Send button
+  // Send/Stop button — toggles between send and abort based on streaming state
   dom.sendBtn.addEventListener('click', () => {
-    if (dom.messageInput.value.trim() && !state.isStreaming) {
+    if (state.isStreaming) {
+      abortStream();
+    } else if (dom.messageInput.value.trim()) {
       sendMessage(dom.messageInput.value);
     }
   });
@@ -96,18 +102,58 @@ function initApp() {
     state.sessions = [];
     state.hasLoadedSessions = false;
     startNewChat();
+    updateWelcomeGreeting(); // Reset greeting to guest
   });
-
-
-  // NOTE: updateHeaderAuth() is intentionally called AFTER tryRestoreSession() in boot(),
-  // so the UI reflects the correct auth state after cookie-based session restore.
-
 
   // Init confirm dialog (for session delete)
   initConfirmDialog();
 
+  // Init scroll-to-bottom floating button
+  initScrollObserver();
+
+  // Keyboard shortcuts
+  initKeyboardShortcuts();
+
   // Focus input
   dom.messageInput.focus();
+}
+
+// ===== Keyboard Shortcuts =====
+function initKeyboardShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    // Ctrl+K / Cmd+K = New chat
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      startNewChat();
+      return;
+    }
+
+    // Ctrl+/ / Cmd+/ = Focus input
+    if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+      e.preventDefault();
+      dom.messageInput.focus();
+      return;
+    }
+
+    // Escape = Close sidebar on mobile or stop streaming
+    if (e.key === 'Escape') {
+      if (state.isStreaming) {
+        abortStream();
+      } else if (window.innerWidth <= 768 && state.isSidebarOpen) {
+        toggleSidebar(false);
+        localStorage.setItem('sidebar-open', 'false');
+      }
+      return;
+    }
+
+    // Ctrl+Shift+S = Toggle sidebar
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'S') {
+      e.preventDefault();
+      toggleSidebar();
+      localStorage.setItem('sidebar-open', String(state.isSidebarOpen));
+      return;
+    }
+  });
 }
 
 // ===== Entry Point =====
@@ -116,8 +162,9 @@ async function boot() {
 
   // Attempt to restore session by calling /auth/refresh with the HttpOnly cookie.
   // If the cookie is valid, we get a fresh access token — no credentials stored in localStorage.
-  const isLoggedIn = await tryRestoreSession('/api/v1');
+  const isLoggedIn = await tryRestoreSession(API_BASE);
   updateHeaderAuth();
+  updateWelcomeGreeting(); // Set personalized greeting after auth restore
 
   // If user is already logged in (session restored), load sessions immediately
   if (isLoggedIn) {
@@ -134,6 +181,7 @@ async function boot() {
     if (success) {
       hideLoginScreen();
       updateHeaderAuth();
+      updateWelcomeGreeting(); // Update greeting after login
 
       // Load sessions after fresh login
       loadSessions().then(() => {

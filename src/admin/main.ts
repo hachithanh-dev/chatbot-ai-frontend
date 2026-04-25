@@ -2,6 +2,7 @@ import '../style-admin.css';
 
 // ⚠️ MUST import and restore auth state FIRST — before any API module loads
 import { tryRestoreSession, isAdmin } from '../auth/authState';
+import { API_BASE } from '../config';
 import { startClock, showToast }          from './utils/helpers';
 import { renderOverview }                 from './features/overview';
 import { renderKnowledgeFeature }         from './features/knowledge';
@@ -122,7 +123,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initQuickNav();
 
   // Restore session via HttpOnly cookie — must await before checking auth state
-  const isLoggedIn = await tryRestoreSession('/api/v1');
+  const isLoggedIn = await tryRestoreSession(API_BASE);
 
   if (!isLoggedIn) {
     // Not logged in → show error, block everything

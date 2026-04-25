@@ -1,0 +1,93 @@
+﻿/* ============================================
+   AI CHATBOT - Dark/Light Theme Design System
+   Accent: #2beede | Font: Inter, JetBrains Mono
+   ============================================ */
+
+/* --- CSS Variables (Dark Theme) --- */
+:root,
+[data-theme="dark"] {
+  --bg-primary: #08080d;
+  --bg-secondary: #0e0e16;
+  --bg-sidebar: #0c0c14;
+  --bg-card: #13131f;
+  --bg-input: #16162a;
+  --bg-hover: #1a1a30;
+  --bg-active: #1e1e38;
+  --bg-message-user: #1a1a35;
+  --bg-message-ai: transparent;
+  --bg-code: #0d0d1a;
+
+  --accent: #2beede;
+  --accent-dim: rgba(43, 238, 222, 0.15);
+  --accent-glow: rgba(43, 238, 222, 0.3);
+  --accent-gradient: linear-gradient(135deg, #2beede 0%, #1a8aff 100%);
+
+  /* Fixed contrast: --text-muted lifted to #7777a0 for WCAG AA compliance */
+  --text-primary: #e8e8f0;
+  --text-secondary: #9999bc;
+  --text-muted: #7777a0;
+  --text-accent: #2beede;
+
+  --border: rgba(255, 255, 255, 0.06);
+  --border-active: rgba(43, 238, 222, 0.3);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 20px rgba(43, 238, 222, 0.15);
+
+  /* Icons for theme toggle */
+  --icon-dark-display: flex;
+  --icon-light-display: none;
+}
+
+/* --- Light Theme (Phase 2.4) --- */
+[data-theme="light"] {
+  --bg-primary: #f5f5f7;
+  --bg-secondary: #ffffff;
+  --bg-sidebar: #eff0f3;
+  --bg-card: #ffffff;
+  --bg-input: #f0f0f5;
+  --bg-hover: #e8e8ee;
+  --bg-active: #dcdcf0;
+  --bg-message-user: #ede8ff;
+  --bg-message-ai: transparent;
+  --bg-code: #f0f0f5;
+
+  --accent: #1a70e0;
+  --accent-dim: rgba(26, 112, 224, 0.12);
+  --accent-glow: rgba(26, 112, 224, 0.25);
+  --accent-gradient: linear-gradient(135deg, #1a70e0 0%, #0040b0 100%);
+
+  --text-primary: #111120;
+  --text-secondary: #44446a;
+  --text-muted: #666688;
+  --text-accent: #1a70e0;
+
+  --border: rgba(0, 0, 0, 0.08);
+  --border-active: rgba(26, 112, 224, 0.35);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.14);
+  --shadow-glow: 0 0 20px rgba(26, 112, 224, 0.15);
+
+  --icon-dark-display: none;
+  --icon-light-display: flex;
+}
+
+/* --- Shared Variables --- */
+:root {
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  --sidebar-width: 300px;
+  --header-height: 60px;
+
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 350ms cubic-bezier(0.16, 1, 0.3, 1);
+}

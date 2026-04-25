@@ -2,18 +2,24 @@
 import { authState, isAdmin } from './authState';
 import { renderGoogleButton, signOut } from './googleAuth';
 import { escapeHtml } from '../utils/formatter';
+import { activateFocusTrap } from '../utils/focusTrap';
 
 // ============================================================
 // LOGIN MODAL (small popup)
 // ============================================================
+
+let _focusTrapCleanup: (() => void) | null = null;
 
 /** Show the login modal popup with focus trap */
 export function showLoginScreen(): void {
   const modal = document.getElementById('login-modal');
   if (modal) {
     modal.classList.remove('hidden');
-    // Trap focus inside modal
-    setTimeout(() => initFocusTrap(modal), 50);
+    // Trap focus inside modal using shared utility
+    setTimeout(() => {
+      _focusTrapCleanup?.();
+      _focusTrapCleanup = activateFocusTrap(modal, hideLoginScreen);
+    }, 50);
   }
 
   // Render Google button in the container
@@ -36,61 +42,7 @@ export function hideLoginScreen(): void {
   const modal = document.getElementById('login-modal');
   if (modal) {
     modal.classList.add('hidden');
-    releaseFocusTrap();
-  }
-}
-
-// ============================================================
-// FOCUS TRAP (A11y - Phase 3.1)
-// ============================================================
-
-let _focusTrapCleanup: (() => void) | null = null;
-
-function getFocusableElements(container: HTMLElement): HTMLElement[] {
-  return Array.from(container.querySelectorAll<HTMLElement>(
-    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-  )).filter(el => !el.hasAttribute('disabled') && !el.closest('[aria-hidden]'));
-}
-
-function initFocusTrap(container: HTMLElement): void {
-  releaseFocusTrap(); // Clear any existing trap
-  const focusable = getFocusableElements(container);
-  if (focusable.length === 0) return;
-
-  // Focus first focusable element
-  focusable[0].focus();
-
-  const handleKeydown = (e: KeyboardEvent) => {
-    if (e.key !== 'Tab') {
-      // Close on Escape
-      if (e.key === 'Escape') {
-        hideLoginScreen();
-      }
-      return;
-    }
-    const focusableNow = getFocusableElements(container);
-    const first = focusableNow[0];
-    const last = focusableNow[focusableNow.length - 1];
-    if (e.shiftKey) {
-      if (document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      }
-    } else {
-      if (document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
-  };
-
-  document.addEventListener('keydown', handleKeydown);
-  _focusTrapCleanup = () => document.removeEventListener('keydown', handleKeydown);
-}
-
-function releaseFocusTrap(): void {
-  if (_focusTrapCleanup) {
-    _focusTrapCleanup();
+    _focusTrapCleanup?.();
     _focusTrapCleanup = null;
   }
 }

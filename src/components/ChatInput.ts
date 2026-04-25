@@ -12,6 +12,14 @@ import { renderSessions, loadSessions } from './Sidebar';
 // Store pending message to send after login
 let pendingMessage: string | null = null;
 
+// Track current stream for abort capability
+let currentAbortController: AbortController | null = null;
+let currentStreamRenderer: StreamRenderer | null = null;
+
+// SVG icons for send/stop toggle
+const SEND_ICON = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
+const STOP_ICON = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>`;
+
 /** Get pending message and clear it */
 export function consumePendingMessage(): string | null {
   const msg = pendingMessage;
@@ -26,7 +34,45 @@ export function autoResizeTextarea() {
 }
 
 export function updateSendButton() {
-  dom.sendBtn.disabled = !dom.messageInput.value.trim() || state.isStreaming;
+  if (state.isStreaming) {
+    // Show stop button — keep enabled so user can abort
+    dom.sendBtn.disabled = false;
+    dom.sendBtn.classList.add('btn-stop-mode');
+    dom.sendBtn.innerHTML = STOP_ICON;
+    dom.sendBtn.title = 'Dừng tạo';
+    dom.sendBtn.setAttribute('aria-label', 'Dừng tạo');
+  } else {
+    // Show send button
+    dom.sendBtn.classList.remove('btn-stop-mode');
+    dom.sendBtn.innerHTML = SEND_ICON;
+    dom.sendBtn.title = 'Gửi tin nhắn';
+    dom.sendBtn.setAttribute('aria-label', 'Gửi tin nhắn');
+    dom.sendBtn.disabled = !dom.messageInput.value.trim();
+  }
+}
+
+/** Abort the current streaming response */
+export function abortStream(): void {
+  if (currentAbortController) {
+    currentAbortController.abort();
+    currentAbortController = null;
+  }
+  if (currentStreamRenderer) {
+    currentStreamRenderer.destroy();
+    currentStreamRenderer = null;
+  }
+  // Remove streaming cursor from any active message
+  const streamingMsg = document.querySelector('.message.streaming');
+  if (streamingMsg) {
+    streamingMsg.classList.remove('streaming');
+  }
+  // Remove typing indicator if still showing
+  const typingEl = document.getElementById('typing-message');
+  typingEl?.remove();
+
+  state.isStreaming = false;
+  updateSendButton();
+  dom.messageInput.focus();
 }
 
 /** Try to refresh access token before a stream request */
@@ -60,15 +106,19 @@ export async function sendMessage(text: string) {
   }
 
   state.isStreaming = true;
-  dom.sendBtn.disabled = true;
   dom.messageInput.value = '';
   autoResizeTextarea();
+  updateSendButton(); // Switch to stop icon
 
   addMessageToUI('user', text);
   const typingEl = showTypingIndicator();
 
   let accumulatedContent = '';
   let currentSessionId = state.currentSessionId;
+
+  // Create abort controller for this stream
+  currentAbortController = new AbortController();
+  const signal = currentAbortController.signal;
 
   try {
     // Ensure valid token before streaming
@@ -90,6 +140,7 @@ export async function sendMessage(text: string) {
         message: text,
         sessionId: currentSessionId,
       }),
+      signal,
     });
 
     if (response.status === 401) {
@@ -125,6 +176,7 @@ export async function sendMessage(text: string) {
 
     // Use StreamRenderer for smooth typewriter effect
     const streamRenderer = new StreamRenderer(contentEl);
+    currentStreamRenderer = streamRenderer;
     let buffer = '';
 
     while (true) {
@@ -143,7 +195,7 @@ export async function sendMessage(text: string) {
         try {
           const event: StreamEvent = JSON.parse(jsonStr);
 
-          if (event.type === 'CONTENT') {
+          if (event.type === 'CONTENT' && event.content) {
             accumulatedContent += event.content;
             streamRenderer.pushToken(event.content);
           } else if (event.type === 'TITLE') {
@@ -164,7 +216,7 @@ export async function sendMessage(text: string) {
               }
               renderSessions();
             }
-          } else if (event.type === 'ERROR') {
+          } else if (event.type === 'ERROR' && event.content) {
             contentEl.innerHTML += `<div class="message-error">${escapeHtml(event.content)}</div>`;
           }
 
@@ -190,6 +242,7 @@ export async function sendMessage(text: string) {
     }
 
     // Signal stream complete — renderer drains remaining queue then finalizes
+    currentStreamRenderer = null;
     streamRenderer.finish(() => {
       aiMessage.classList.remove('streaming');
       scrollToBottom();
@@ -201,8 +254,14 @@ export async function sendMessage(text: string) {
 
   } catch (err: any) {
     typingEl?.remove();
-    addMessageToUI('assistant', `⚠️ **Connection Error**: ${err.message || 'Could not connect to the server.'}`);
+    if (err.name === 'AbortError') {
+      // User cancelled — keep what was already rendered
+      currentStreamRenderer = null;
+    } else {
+      addMessageToUI('assistant', `⚠️ **Connection Error**: ${err.message || 'Could not connect to the server.'}`);
+    }
   } finally {
+    currentAbortController = null;
     state.isStreaming = false;
     updateSendButton();
     dom.messageInput.focus();
