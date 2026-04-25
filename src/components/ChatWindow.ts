@@ -5,6 +5,7 @@ import { escapeHtml } from '../utils/formatter';
 import { renderMarkdown } from './MarkdownRenderer';
 import { renderSessions, toggleSidebar } from './Sidebar';
 import { addMessageActions } from './UIExtensions';
+import { authState } from '../auth/authState';
 
 const STORAGE_KEY_SESSION = 'chatbot_last_session_id';
 
@@ -82,6 +83,7 @@ export function clearChat() {
   dom.chatMessages.appendChild(dom.welcomeScreen);
   dom.welcomeScreen.style.display = '';
   dom.chatTitle.textContent = 'New Conversation';
+  updateWelcomeGreeting(); // Refresh greeting when clearing chat
 }
 
 let currentLoadController: AbortController | null = null;
@@ -128,4 +130,49 @@ export function startNewChat() {
   clearChat();
   renderSessions();
   dom.messageInput.focus();
+}
+
+// ============================================================
+// SCROLL-TO-BOTTOM FLOATING BUTTON
+// ============================================================
+
+export function initScrollObserver(): void {
+  const scrollBtn = document.getElementById('scroll-to-bottom');
+  if (!scrollBtn) return;
+
+  dom.chatMessages.addEventListener('scroll', () => {
+    const { scrollTop, scrollHeight, clientHeight } = dom.chatMessages;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    scrollBtn.classList.toggle('visible', distanceFromBottom > 200);
+  });
+
+  scrollBtn.addEventListener('click', () => {
+    dom.chatMessages.scrollTo({
+      top: dom.chatMessages.scrollHeight,
+      behavior: 'smooth',
+    });
+  });
+}
+
+// ============================================================
+// PERSONALIZED WELCOME GREETING
+// ============================================================
+
+export function updateWelcomeGreeting(): void {
+  const greetingEl = document.getElementById('welcome-greeting');
+  if (!greetingEl) return;
+
+  const hour = new Date().getHours();
+  let timeGreeting: string;
+  if (hour < 12) timeGreeting = 'Chào buổi sáng';
+  else if (hour < 18) timeGreeting = 'Chào buổi chiều';
+  else timeGreeting = 'Chào buổi tối';
+
+  if (authState.isLoggedIn && authState.userInfo?.name) {
+    // Get first name (last word in Vietnamese name convention)
+    const firstName = authState.userInfo.name.split(' ').pop() || '';
+    greetingEl.textContent = `${timeGreeting}, ${firstName}!`;
+  } else {
+    greetingEl.textContent = 'Bạn đang nghĩ gì vậy?';
+  }
 }

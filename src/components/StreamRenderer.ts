@@ -19,11 +19,11 @@ import { scrollToBottom } from './ChatWindow';
  */
 
 // --- Configuration ---
-const CHARS_PER_FRAME = 3;           // Characters revealed per animation tick
+const CHARS_PER_FRAME = 1;           // Characters revealed per animation tick
 const ANIMATION_INTERVAL_MS = 16;    // ~60fps tick rate for typewriter
 const RENDER_INTERVAL_MS = 80;       // Markdown re-parse interval (batch)
-const FAST_CATCHUP_THRESHOLD = 100;  // If buffer > this, speed up to catch up
-const FAST_CHARS_PER_FRAME = 12;     // Faster drain when buffer is large
+const FAST_CATCHUP_THRESHOLD = 200;  // If buffer > this, speed up to catch up
+const FAST_CHARS_PER_FRAME = 6;      // Faster drain when buffer is large
 
 export class StreamRenderer {
   private contentEl: HTMLElement;
