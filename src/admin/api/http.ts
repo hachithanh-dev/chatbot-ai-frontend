@@ -1,7 +1,7 @@
 import { authState, isAccessTokenExpired, updateAccessToken } from '../../auth/authState';
+import { API_BASE, ADMIN_API_BASE } from '../../config';
 
-export const ADMIN_API_BASE = '/api/v1/admin';
-export const API_BASE = '/api/v1';
+export { API_BASE, ADMIN_API_BASE };
 
 // ---------------------------------------------------------------------------
 // Internal helpers

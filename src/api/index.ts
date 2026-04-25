@@ -1,7 +1,8 @@
 import type { CursorResponse, Session, ChatMessage } from '../types';
 import { authState, isAccessTokenExpired, updateAccessToken, clearAuthState } from '../auth/authState';
+import { API_BASE } from '../config';
 
-export const API_BASE = '/api/v1';
+export { API_BASE };
 
 /** Build authorization headers with current access token */
 function getAuthHeaders(): Record<string, string> {
