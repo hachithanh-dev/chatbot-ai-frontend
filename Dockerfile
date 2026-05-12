@@ -10,6 +10,11 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
 
+# Build-time environment variables (baked into JS bundle by Vite)
+# These MUST be passed via --build-arg during docker build
+ARG VITE_GOOGLE_CLIENT_ID
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
+
 # Copy source code and build
 COPY . .
 RUN npm run build
